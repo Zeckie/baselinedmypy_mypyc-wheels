@@ -16,25 +16,27 @@ jobs:
         # cibuildwheel builds linux wheels inside a manylinux container
         # it also takes care of procuring the correct python version for us
         os: [ubuntu-latest, windows-latest, macos-latest]
+        # Try to keep in sync with supported, released python versions
+        # https://devguide.python.org/versions/#supported-versions
         python-version: [37, 38, 39, 310, 311]
 
     steps:
       - uses: actions/checkout@v3
-      - name: Checkout mypy
+      - name: Checkout baselinedmypy
         shell: bash
         # use a commit hash checked into a file to get the mypy revision to build.
         # submodules prove problematic since .git is outside cibuildwheel's manylinux container
         run: |
           COMMIT=$(cat mypy_commit)
-          git clone https://github.com/python/mypy.git
-          cd mypy
+          git clone https://github.com/Zeckie/baselinedmypy.git
+          cd baselinedmypy
           git checkout $COMMIT
           git submodule update --init --recursive
 
       - uses: pypa/cibuildwheel@v2.11.1
         with:
           config-file: cibuildwheel.toml
-          package-dir: mypy
+          package-dir: baselinedmypy
         env:
           CIBW_BUILD: "cp${{ matrix.python-version}}-*"
 
@@ -52,30 +54,30 @@ jobs:
         name: Install Python
         with:
           python-version: "3.9"
-      - name: Checkout mypy
+      - name: Checkout baselinedmypy
         shell: bash
         run: |
           COMMIT=$(cat mypy_commit)
-          git clone https://github.com/python/mypy.git
-          cd mypy
+          git clone https://github.com/Zeckie/baselinedmypy.git
+          cd baselinedmypy
           git checkout $COMMIT
           git submodule update --init --recursive
       - name: Run check-manifest
         run: |
-          cd mypy
+          cd baselinedmypy
           pip install check-manifest
           check-manifest -v
       - name: Build sdist and wheel
         run: |
-          cd mypy
+          cd baselinedmypy
           pip install --upgrade setuptools pip wheel
           python setup.py sdist bdist_wheel
       - uses: actions/upload-artifact@v3
         with:
           name: dist
           path: |
-            mypy/dist/*.whl
-            mypy/dist/*.tar.gz
+            baselinedmypy/dist/*.whl
+            baselinedmypy/dist/*.tar.gz
   release:
     name: create release
     needs: [build_wheels, build_sdist_python_wheel]
